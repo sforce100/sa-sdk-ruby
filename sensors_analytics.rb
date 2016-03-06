@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.3.1'
+  VERSION = '1.3.2'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
@@ -327,25 +327,20 @@ module SensorsAnalytics
   #
   #     http://www.sensorsdata.cn/manual/debug_mode.html
   #
-  # Debug 模式下，debug_server_url 必须设为 Sensors Analytics Debug 模式的 URI，如 
-  #
-  #     http://sa_host:8006/debug?token=xxx
-  #
-  # debug_write_data 参数为 true，则 Debug 模式下导入的数据会导入 Sensors Analytics；否则，Debug 模式下导入的数据将只进行格式校验，不会导入 Sensors Analytics 中
+  # write_data 参数为 true，则 Debug 模式下导入的数据会导入 Sensors Analytics；否则，Debug 模式下导入的数据将只进行格式校验，不会导入 Sensors Analytics 中
   class DebugConsumer < SensorsAnalyticsConsumer
    
-    def initialize(debug_server_url, debug_write_data)
-      uri = URI(debug_server_url)
-      unless uri.path.end_with?('debug')
-        raise DebugModeError.new("Invalid server URL '#{debug_server_url}' for Debug Consumer.")
-      end
+    def initialize(server_url, write_data)
+      uri = URI(server_url)
+      # 将 URL Path 替换成 Debug 模式的 '/debug'
+      uri.path = '/debug'
 
       @headers = {}
-      unless debug_write_data 
+      unless write_data 
         @headers['Dry-Run'] = 'true'
       end
 
-      super(debug_server_url)
+      super(uri.to_s)
     end
 
     def send(event)

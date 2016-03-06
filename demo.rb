@@ -2,8 +2,7 @@ require './sensors_analytics.rb'
 
 DISTINCT_ID = 'abcdefg'
 
-SA_URL = 'http://sa_host:8006/sa?token=xxx'
-DEBUG_URL = 'http://sa_host:8006/debug?token=xxx'
+SA_URL = 'http://sa_host.com:8006/sa?token=xxx'
 
 def debug_mode_demo
   begin
@@ -12,7 +11,7 @@ def debug_mode_demo
     puts "Expected excaption: '#{e.message}'"
   end
 
-  consumer = SensorsAnalytics::DebugConsumer.new(DEBUG_URL, false)
+  consumer = SensorsAnalytics::DebugConsumer.new(SA_URL, false)
   sa = SensorsAnalytics::SensorsAnalytics.new(consumer)
   
   begin
@@ -26,7 +25,7 @@ def debug_mode_demo
     puts "Unexpected exception: '#{e.message}'"
   end
  
-  consumer = SensorsAnalytics::DebugConsumer.new(DEBUG_URL, true)
+  consumer = SensorsAnalytics::DebugConsumer.new(SA_URL, true)
   sa = SensorsAnalytics::SensorsAnalytics.new(consumer)
   
   begin
