@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.3.2'
+  VERSION = '1.3.3'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
@@ -175,7 +175,7 @@ module SensorsAnalytics
     end
 
     def _assert_key(type, key)
-      unless key.instance_of?(String)
+      unless key.instance_of?(String) || key.instance_of?(Symbol)
         raise IllegalDataError.new("#{type} must be an instance of String.")
       end
       unless key.length >= 1
@@ -200,7 +200,7 @@ module SensorsAnalytics
       properties.each do |key, value|
         _assert_key_with_regex(:PropertyKey, key)
        
-        unless value.is_a?(Integer) || value.is_a?(Float) || value.is_a?(String) || value.is_a?(Array) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
+        unless value.is_a?(Integer) || value.is_a?(Float) || value.is_a?(String) || value.is_a?(Symbol) || value.is_a?(Array) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
           raise IllegalDateError.new("The properties value must be an instance of Integer/Float/String/Array.")
         end
 
@@ -217,7 +217,7 @@ module SensorsAnalytics
             raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
           end
           value.each do |value|
-            unless value.is_a?(String)
+            unless value.is_a?(String) || value.is_a?(Symbol)
               raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
             end
           end
