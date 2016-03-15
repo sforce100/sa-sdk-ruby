@@ -1,4 +1,4 @@
-require './sensors_analytics.rb'
+require './lib/sensors_analytics_sdk.rb'
 
 DISTINCT_ID = 'abcdefg'
 
