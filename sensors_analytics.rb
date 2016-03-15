@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.3.3'
+  VERSION = '1.3.4'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
@@ -92,14 +92,14 @@ module SensorsAnalytics
       _track_event(:track_signup, distinct_id, origin_distinct_id, :$SignUp, properties)
     end
 
-    # 设置用户的一个或多个属性，properties 是一个哈希表，其中每对元素描述用户的一个属性，哈希表的 Key 必须为 String 类型，哈希表的 Value 可以为 Integer、Float、String、TrueClass 和 FalseClass 类型
+    # 设置用户的一个或多个属性，properties 是一个哈希表，其中每对元素描述用户的一个属性，哈希表的 Key 必须为 String 类型，哈希表的 Value 可以为 Integer、Float、String、Time、TrueClass 和 FalseClass 类型
     #
     # 无论用户该属性值是否存在，都将用 properties 中的属性覆盖原有设置
     def profile_set(distinct_id, properties)
       _track_event(:profile_set, distinct_id, distinct_id, nil, properties)
     end
 
-    # 尝试设置用户的一个或多个属性，properties 是一个哈希表，其中每对元素描述用户的一个属性，哈希表的 Key 必须为 String 类型，哈希表的 Value 可以为 Integer、Float、String、TrueClass 和 FalseClass 类型
+    # 尝试设置用户的一个或多个属性，properties 是一个哈希表，其中每对元素描述用户的一个属性，哈希表的 Key 必须为 String 类型，哈希表的 Value 可以为 Integer、Float、String、Time、TrueClass 和 FalseClass 类型
     #
     # 若用户不存在该属性，则设置用户的属性，否则放弃
     def profile_set_once(distinct_id, properties)
@@ -144,6 +144,7 @@ module SensorsAnalytics
 
       # 从事件属性中获取时间配置
       event_time = _extract_time_from_properties(properties)
+      properties.delete("$time")
 
       # Track / TrackSignup / ProfileSet / ProfileSetOne / ProfileIncrement / ProfileAppend / ProfileUnset
       event = {
@@ -200,24 +201,44 @@ module SensorsAnalytics
       properties.each do |key, value|
         _assert_key_with_regex(:PropertyKey, key)
        
-        unless value.is_a?(Integer) || value.is_a?(Float) || value.is_a?(String) || value.is_a?(Symbol) || value.is_a?(Array) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
+        unless value.is_a?(Integer) || value.is_a?(Float) || value.is_a?(String) || value.is_a?(Symbol) || value.is_a?(Array) || value.is_a?(TrueClass) || value.is_a?(FalseClass) || value.is_a?(Time)
           raise IllegalDateError.new("The properties value must be an instance of Integer/Float/String/Array.")
         end
 
-        # Profile increment 的属性必须为数值类型
+        # 属性为 Array 时，元素必须为 String 或 Symbol 类型
+        if value.is_a?(Array)
+          value.each do |element|
+            unless element.is_a?(String) || element.is_a?(Symbol)
+              raise IllegalDateError.new("The properties value of PROFILE APPEND must be an instance of Array[String].")
+            end
+            # 元素的长度不能超过255
+            unless element.length <= 255
+              raise IllegalDateError.new("The properties value is too long.")
+            end
+          end
+        end
+        
+        # 属性为 String 或 Symbol 时，长度不能超过255
+        if value.is_a?(String) || value.is_a?(Symbol)
+          unless value.length <= 255
+            raise IllegalDateError.new("The properties value is too long.")
+          end
+        end
+
+        # profile_increment 的属性必须为数值类型
         if event_type == :profile_increment
           unless value.is_a?(Integer)
             raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Integer.")
           end
         end
         
-        # Profile append 的属性必须为数组类型，且数组元素必须为字符串
+        # profile_append 的属性必须为数组类型，且数组元素必须为字符串
         if event_type == :profile_append
           unless value.is_a?(Array)
             raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
           end
-          value.each do |value|
-            unless value.is_a?(String) || value.is_a?(Symbol)
+          value.each do |element|
+            unless element.is_a?(String) || element.is_a?(Symbol)
               raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
             end
           end

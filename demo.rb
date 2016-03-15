@@ -17,7 +17,9 @@ def debug_mode_demo
   begin
     properties = {
         "sex" => "male",
-        "age" => 123
+        "age" => 123,
+        "$time" => Time.now(),
+        "event_time" => Time.now()
     }
     # expects 'valid message...'
     sa.track(DISTINCT_ID, "RubyDemoStart", properties)
