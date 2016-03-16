@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.3.8'
+  VERSION = '1.3.9'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
@@ -153,8 +153,7 @@ module SensorsAnalytics
       
       properties.each do |key, value|
         if value.is_a?(Time)
-          ms_part = (value.nsec / 100000).to_s
-          event_properties[key] = value.strftime('%Y-%m-%d %H:%M:%S.') + ms_part
+          event_properties[key] = value.strftime("%Y-%m-%d %H:%M:%S.#{(value.to_f * 1000.0).to_i % 1000}")
         else
           event_properties[key] = value
         end
