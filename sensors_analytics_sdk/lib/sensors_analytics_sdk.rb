@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.3.7'
+  VERSION = '1.3.8'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
@@ -146,13 +146,18 @@ module SensorsAnalytics
       event_time = _extract_time_from_properties(properties)
       properties.delete("$time")
 
+      event_properties = {}
       if event_type == :track || event_type == :track_signup
         event_properties = @super_properties.dup
-        properties.each do |key, value|
+      end
+      
+      properties.each do |key, value|
+        if value.is_a?(Time)
+          ms_part = (value.nsec / 100000).to_s
+          event_properties[key] = value.strftime('%Y-%m-%d %H:%M:%S.') + ms_part
+        else
           event_properties[key] = value
         end
-      else
-        event_properties = properties.dup
       end
 
       # Track / TrackSignup / ProfileSet / ProfileSetOne / ProfileIncrement / ProfileAppend / ProfileUnset
