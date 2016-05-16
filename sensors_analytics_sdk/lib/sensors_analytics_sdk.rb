@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.3.9'
+  VERSION = '1.4.0'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
@@ -60,9 +60,6 @@ module SensorsAnalytics
     #
     # 当 track 的 Properties 和 Super Properties 有相同的 key 时，将采用 track 的
     def register_super_properties(properties)
-      # raise IllegalDataError
-      _assert_properties(properties)
-
       properties.each do |key, value|
         @super_properties[key] = value
       end
@@ -144,7 +141,7 @@ module SensorsAnalytics
 
       # 从事件属性中获取时间配置
       event_time = _extract_time_from_properties(properties)
-      properties.delete("$time")
+      properties.delete(:$time)
 
       event_properties = {}
       if event_type == :track || event_type == :track_signup
@@ -159,21 +156,24 @@ module SensorsAnalytics
         end
       end
 
+      lib_properties = _get_lib_properties()
+
       # Track / TrackSignup / ProfileSet / ProfileSetOne / ProfileIncrement / ProfileAppend / ProfileUnset
       event = {
-          "type" => event_type,
-          "time" => event_time,
-          "distinct_id" => distinct_id,
-          "properties" => event_properties,
+          :type => event_type,
+          :time => event_time,
+          :distinct_id => distinct_id,
+          :properties => event_properties,
+          :lib => lib_properties,
       }
 
       if event_type == :track
         # Track
-        event["event"] = event_name
+        event[:event] = event_name
       elsif event_type == :track_signup
         # TrackSignUp
-        event["event"] = event_name
-        event["original_id"] = origin_distinct_id
+        event[:event] = event_name
+        event[:original_id] = origin_distinct_id
       end
 
       @consumer.send(event)
@@ -181,16 +181,42 @@ module SensorsAnalytics
 
     def _extract_time_from_properties(properties)
       properties.each do |key, value|
-        if key == "$time" && value.is_a?(Time)
+        if (key == :$time || key == "$time") && value.is_a?(Time)
           return (value.to_f * 1000).to_i
         end
       end
       return (Time.now().to_f * 1000).to_i
     end
 
+    def _get_lib_properties()
+      lib_properties = {
+        '$lib' => 'Ruby',
+        '$lib_version' => VERSION,
+        '$lib_method' => 'code',
+      }
+
+      @super_properties.each do |key, value|
+        if key == :$app_version || key == "$app_version"
+          lib_properties[:$app_version] = value
+        end
+      end
+
+      begin
+        raise Exception
+      rescue Exception => e
+        trace = e.backtrace[3].split(':')
+        file = trace[0]
+        line = trace[1]
+        function = trace[2].split('`')[1][0..-2]
+        lib_properties[:$lib_detail] = "###{function}###{file}###{line}"
+      end
+
+      return lib_properties
+    end
+
     def _assert_key(type, key)
       unless key.instance_of?(String) || key.instance_of?(Symbol)
-        raise IllegalDataError.new("#{type} must be an instance of String.")
+        raise IllegalDataError.new("#{type} must be an instance of String / Symbol.")
       end
       unless key.length >= 1
         raise IllegalDataError.new("#{type} is empty.")
@@ -286,7 +312,7 @@ module SensorsAnalytics
         init_header[key] = value
       end
 
-      uri = URI(@server_url)
+      uri = _get_uri(@server_url)
       request = Net::HTTP::Post.new(uri.request_uri, initheader = init_header)
       request.set_form_data(form_data)
 
@@ -297,6 +323,17 @@ module SensorsAnalytics
 
       response = client.request(request)
       return [response.code, response.body]
+    end
+
+    def _get_uri(url)
+      begin
+          URI.parse(url)
+      rescue URI::InvalidURIError
+          host = url.match(".+\:\/\/([^\/]+)")[1]
+          uri = URI.parse(url.sub(host, 'dummy-host'))
+          uri.instance_variable_set('@host', host)
+          uri
+      end
     end
 
   end
@@ -365,7 +402,7 @@ module SensorsAnalytics
   class DebugConsumer < SensorsAnalyticsConsumer
    
     def initialize(server_url, write_data)
-      uri = URI(server_url)
+      uri = _get_uri(server_url) 
       # 将 URL Path 替换成 Debug 模式的 '/debug'
       uri.path = '/debug'
 
@@ -397,7 +434,7 @@ module SensorsAnalytics
         raise DebugModeError.new("Could not write to Sensors Analytics, server responded with #{response_code} returning: '#{response_body}'")
       end
     end
-
+ 
   end
 
 end
