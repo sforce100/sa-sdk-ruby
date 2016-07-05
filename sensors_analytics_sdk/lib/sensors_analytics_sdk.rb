@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.4.0'
+  VERSION = '1.5.0'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
@@ -250,16 +250,16 @@ module SensorsAnalytics
             unless element.is_a?(String) || element.is_a?(Symbol)
               raise IllegalDateError.new("The properties value of PROFILE APPEND must be an instance of Array[String].")
             end
-            # 元素的长度不能超过255
-            unless element.length <= 255
+            # 元素的长度不能超过8192
+            unless element.length <= 8192
               raise IllegalDateError.new("The properties value is too long.")
             end
           end
         end
         
-        # 属性为 String 或 Symbol 时，长度不能超过255
+        # 属性为 String 或 Symbol 时，长度不能超过8191
         if value.is_a?(String) || value.is_a?(Symbol)
-          unless value.length <= 255
+          unless value.length <= 8192
             raise IllegalDateError.new("The properties value is too long.")
           end
         end
@@ -431,6 +431,9 @@ module SensorsAnalytics
         puts "invalid message: #{event_list.to_json}"
         puts "response code: #{response_code}"
         puts "response body: #{response_body}"
+      end
+
+      if response_code.to_i >= 300
         raise DebugModeError.new("Could not write to Sensors Analytics, server responded with #{response_code} returning: '#{response_body}'")
       end
     end
