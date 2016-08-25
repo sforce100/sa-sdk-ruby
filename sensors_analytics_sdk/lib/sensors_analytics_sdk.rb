@@ -142,6 +142,7 @@ module SensorsAnalytics
       # 从事件属性中获取时间配置
       event_time = _extract_time_from_properties(properties)
       properties.delete(:$time)
+      properties.delete("$time")
 
       event_properties = {}
       if event_type == :track || event_type == :track_signup
