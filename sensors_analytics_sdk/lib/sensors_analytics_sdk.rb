@@ -242,18 +242,18 @@ module SensorsAnalytics
         _assert_key_with_regex(:PropertyKey, key)
        
         unless value.is_a?(Integer) || value.is_a?(Float) || value.is_a?(String) || value.is_a?(Symbol) || value.is_a?(Array) || value.is_a?(TrueClass) || value.is_a?(FalseClass) || value.is_a?(Time)
-          raise IllegalDateError.new("The properties value must be an instance of Integer/Float/String/Array.")
+          raise IllegalDataError.new("The properties value must be an instance of Integer/Float/String/Array.")
         end
 
         # 属性为 Array 时，元素必须为 String 或 Symbol 类型
         if value.is_a?(Array)
           value.each do |element|
             unless element.is_a?(String) || element.is_a?(Symbol)
-              raise IllegalDateError.new("The properties value of PROFILE APPEND must be an instance of Array[String].")
+              raise IllegalDataError.new("The properties value of PROFILE APPEND must be an instance of Array[String].")
             end
             # 元素的长度不能超过8192
             unless element.length <= 8192
-              raise IllegalDateError.new("The properties value is too long.")
+              raise IllegalDataError.new("The properties value is too long.")
             end
           end
         end
@@ -261,25 +261,25 @@ module SensorsAnalytics
         # 属性为 String 或 Symbol 时，长度不能超过8191
         if value.is_a?(String) || value.is_a?(Symbol)
           unless value.length <= 8192
-            raise IllegalDateError.new("The properties value is too long.")
+            raise IllegalDataError.new("The properties value is too long.")
           end
         end
 
         # profile_increment 的属性必须为数值类型
         if event_type == :profile_increment
           unless value.is_a?(Integer)
-            raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Integer.")
+            raise IllegalDataError.new("The properties value of PROFILE INCREMENT must be an instance of Integer.")
           end
         end
         
         # profile_append 的属性必须为数组类型，且数组元素必须为字符串
         if event_type == :profile_append
           unless value.is_a?(Array)
-            raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
+            raise IllegalDataError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
           end
           value.each do |element|
             unless element.is_a?(String) || element.is_a?(Symbol)
-              raise IllegalDateError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
+              raise IllegalDataError.new("The properties value of PROFILE INCREMENT must be an instance of Array[String].")
             end
           end
         end
@@ -296,7 +296,7 @@ module SensorsAnalytics
 
     def request!(event_list, headers = {})
       unless event_list.is_a?(Array) && headers.is_a?(Hash)
-        raise IllegalDateError.new("The argument of 'request!' should be a Array.") 
+        raise IllegalDataError.new("The argument of 'request!' should be a Array.") 
       end
 
       # GZip && Base64 encode
