@@ -5,7 +5,7 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.5.0'
+  VERSION = '1.5.2'
 
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
 
