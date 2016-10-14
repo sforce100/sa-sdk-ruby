@@ -5,9 +5,9 @@ require 'zlib'
 
 module SensorsAnalytics 
   
-  VERSION = '1.5.2'
+  VERSION = '1.5.3'
 
-  KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\\d_$]{0,99})$/
+  KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\d_$]{0,99})$/
 
   # Sensors Analytics SDK 的异常
   # 使用 Sensors Analytics SDK 时，应该捕获 IllegalDataError、ConnectionError 和 ServerError。Debug 模式下，会抛出 DebugModeError 用于校验数据导入是否正确，线上运行时不需要捕获 DebugModeError 
