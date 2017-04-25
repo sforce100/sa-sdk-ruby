@@ -1,34 +1,5 @@
-require 'base64'
-require 'json'
-require 'net/http'
-require 'zlib'
-
-module SensorsAnalytics 
-  
-  VERSION = '1.5.3'
-
+module SensorsAnalytics
   KEY_PATTERN = /^((?!^distinct_id$|^original_id$|^time$|^properties$|^id$|^first_id$|^second_id$|^users$|^events$|^event$|^user_id$|^date$|^datetime$)[a-zA-Z_$][a-zA-Z\d_$]{0,99})$/
-
-  # Sensors Analytics SDK 的异常
-  # 使用 Sensors Analytics SDK 时，应该捕获 IllegalDataError、ConnectionError 和 ServerError。Debug 模式下，会抛出 DebugModeError 用于校验数据导入是否正确，线上运行时不需要捕获 DebugModeError 
-  class SensorsAnalyticsError < StandardError
-  end
-
-  # 输入数据格式错误，如 Distinct Id、Event Name、Property Keys 不符合命名规范，或 Property Values 不符合数据类型要求
-  class IllegalDataError < SensorsAnalyticsError
-  end
-
-  # 网络连接错误
-  class ConnectionError < SensorsAnalyticsError
-  end
-
-  # 服务器返回导入失败
-  class ServerError < SensorsAnalyticsError
-  end
-
-  # Debug模式下各种异常
-  class DebugModeError < SensorsAnalyticsError
-  end
 
   # Sensors Analytics SDK
   #
@@ -41,18 +12,18 @@ module SensorsAnalytics
   # SENSORS_ANALYTICS_URL 是 Sensors Analytics 收集数据的 URI，可以从配置界面中获得。
   #
   # Sensors Analytics SDK 通过 Consumer 向 Sensors Analytics 发送数据，提供三种 Consumer:
-  #     
+  #
   #     DefaultConsumer - 逐条同步发送数据
   #     BatchConsumer - 批量同步发送数据
   #     DebugModeConsumer - Debug 模式，用于校验数据导入是否正确
   #
   # Consumer 的具体信息请参看对应注释
   class SensorsAnalytics
-   
+
     # Sensors Analytics SDK 构造函数，传入 Consumer 对象
     def initialize(consumer)
       @consumer = consumer
-      # 初始化事件公共属性 
+      # 初始化事件公共属性
       clear_super_properties()
     end
 
@@ -83,7 +54,7 @@ module SensorsAnalytics
     # 这个接口是一个较为复杂的功能，请在使用前先阅读相关说明:
     #
     #     http://www.sensorsdata.cn/manual/track_signup.html
-    # 
+    #
     # 并在必要时联系我们的技术支持人员。
     def track_signup(distinct_id, origin_distinct_id, properties={})
       _track_event(:track_signup, distinct_id, origin_distinct_id, :$SignUp, properties)
@@ -100,7 +71,7 @@ module SensorsAnalytics
     #
     # 若用户不存在该属性，则设置用户的属性，否则放弃
     def profile_set_once(distinct_id, properties)
-      _track_event(:profile_set_once, distinct_id, distinct_id, nil, properties) 
+      _track_event(:profile_set_once, distinct_id, distinct_id, nil, properties)
     end
 
     # 为用户的一个或多个属性累加一个数值，properties 是一个哈希表，其中每对元素描述用户的一个属性，哈希表的 Key 必须为 String 类型，Value 必须为 Integer 类型
@@ -111,7 +82,7 @@ module SensorsAnalytics
     end
 
     # 追加数据至用户的一个或多个列表类型的属性，properties 是一个哈希表，其中每对元素描述用户的一个属性，哈希表的 Key 必须为 String 类型，Value 必须为元素是 String 类型的数组
-    # 
+    #
     # 若该属性不存在，则创建一个空数组，并插入 properties 中的属性值
     def profile_append(distinct_id, properties)
       _track_event(:profile_append, distinct_id, distinct_id, nil, properties)
@@ -148,7 +119,7 @@ module SensorsAnalytics
       if event_type == :track || event_type == :track_signup
         event_properties = @super_properties.dup
       end
-      
+
       properties.each do |key, value|
         if value.is_a?(Time)
           event_properties[key] = value.strftime("%Y-%m-%d %H:%M:%S.#{(value.to_f * 1000.0).to_i % 1000}")
@@ -240,7 +211,7 @@ module SensorsAnalytics
       end
       properties.each do |key, value|
         _assert_key_with_regex(:PropertyKey, key)
-       
+
         unless value.is_a?(Integer) || value.is_a?(Float) || value.is_a?(String) || value.is_a?(Symbol) || value.is_a?(Array) || value.is_a?(TrueClass) || value.is_a?(FalseClass) || value.is_a?(Time)
           raise IllegalDataError.new("The properties value must be an instance of Integer/Float/String/Array.")
         end
@@ -257,7 +228,7 @@ module SensorsAnalytics
             end
           end
         end
-        
+
         # 属性为 String 或 Symbol 时，长度不能超过8191
         if value.is_a?(String) || value.is_a?(Symbol)
           unless value.length <= 8192
@@ -271,7 +242,7 @@ module SensorsAnalytics
             raise IllegalDataError.new("The properties value of PROFILE INCREMENT must be an instance of Integer.")
           end
         end
-        
+
         # profile_append 的属性必须为数组类型，且数组元素必须为字符串
         if event_type == :profile_append
           unless value.is_a?(Array)
@@ -287,158 +258,4 @@ module SensorsAnalytics
     end
 
   end
-
-  class SensorsAnalyticsConsumer
-   
-    def initialize(server_url)
-      @server_url = server_url
-    end
-
-    def request!(event_list, headers = {})
-      unless event_list.is_a?(Array) && headers.is_a?(Hash)
-        raise IllegalDataError.new("The argument of 'request!' should be a Array.") 
-      end
-
-      # GZip && Base64 encode
-      wio = StringIO.new("w")
-      gzip_io = Zlib::GzipWriter.new(wio)
-      gzip_io.write(event_list.to_json)
-      gzip_io.close()
-      data = Base64.encode64(wio.string).gsub("\n", '')
-
-      form_data = {"data_list" => data, "gzip" => 1}
-
-      init_header = {"User-Agent" => "SensorsAnalytics Ruby SDK"}
-      headers.each do |key, value|
-        init_header[key] = value
-      end
-
-      uri = _get_uri(@server_url)
-      request = Net::HTTP::Post.new(uri.request_uri, initheader = init_header)
-      request.set_form_data(form_data)
-
-      client = Net::HTTP.new(uri.host, uri.port)
-      client.open_timeout = 10
-      client.continue_timeout = 10
-      client.read_timeout = 10
-
-      response = client.request(request)
-      return [response.code, response.body]
-    end
-
-    def _get_uri(url)
-      begin
-          URI.parse(url)
-      rescue URI::InvalidURIError
-          host = url.match(".+\:\/\/([^\/]+)")[1]
-          uri = URI.parse(url.sub(host, 'dummy-host'))
-          uri.instance_variable_set('@host', host)
-          uri
-      end
-    end
-
-  end
-
-  # 实现逐条、同步发送的 Consumer，初始化参数为 Sensors Analytics 收集数据的 URI
-  class DefaultConsumer < SensorsAnalyticsConsumer
-    
-    def initialize(server_url)
-      super(server_url)
-    end
-
-    def send(event)
-      event_list = [event]
-
-      begin
-        response_code, response_body = request!(event_list)
-      rescue => e
-        raise ConnectionError.new("Could not connect to Sensors Analytics, with error \"#{e.message}\".")
-      end
-
-      unless response_code.to_i == 200
-        raise ServerError.new("Could not write to Sensors Analytics, server responded with #{response_code} returning: '#{response_body}'")
-      end
-    end
-
-  end
-
-  # 实现批量、同步发送的 Consumer，初始化参数为 Sensors Analytics 收集数据的 URI 和批量发送的缓存大小
-  class BatchConsumer < SensorsAnalyticsConsumer
-
-    MAX_FLUSH_BULK = 50
-
-    def initialize(server_url, flush_bulk = MAX_FLUSH_BULK)
-      @event_buffer = []
-      @flush_bulk = [flush_bulk, MAX_FLUSH_BULK].min
-      super(server_url)
-    end
-
-    def send(event)
-      @event_buffer << event
-      flush if @event_buffer.length >= @flush_bulk
-    end
-
-    def flush()
-      @event_buffer.each_slice(@flush_bulk) do |event_list|
-        begin
-          response_code, response_body = request!(event_list)
-        rescue => e
-          raise ConnectionError.new("Could not connect to Sensors Analytics, with error \"#{e.message}\".")
-        end
-
-        unless response_code.to_i == 200
-          raise ServerError.new("Could not write to Sensors Analytics, server responded with #{response_code} returning: '#{response_body}'")
-        end
-      end
-      @event_buffer = []  
-    end
-
-  end
-
-  # Debug 模式的 Consumer，Debug 模式的具体信息请参考文档
-  #
-  #     http://www.sensorsdata.cn/manual/debug_mode.html
-  #
-  # write_data 参数为 true，则 Debug 模式下导入的数据会导入 Sensors Analytics；否则，Debug 模式下导入的数据将只进行格式校验，不会导入 Sensors Analytics 中
-  class DebugConsumer < SensorsAnalyticsConsumer
-   
-    def initialize(server_url, write_data)
-      uri = _get_uri(server_url) 
-      # 将 URL Path 替换成 Debug 模式的 '/debug'
-      uri.path = '/debug'
-
-      @headers = {}
-      unless write_data 
-        @headers['Dry-Run'] = 'true'
-      end
-
-      super(uri.to_s)
-    end
-
-    def send(event)
-      event_list = [event]
-
-      begin
-        response_code, response_body = request!(event_list, @headers)
-      rescue => e
-        raise DebugModeError.new("Could not connect to Sensors Analytics, with error \"#{e.message}\".")
-      end
-
-      puts "=========================================================================="
-
-      if response_code.to_i == 200
-        puts "valid message: #{event_list.to_json}"
-      else
-        puts "invalid message: #{event_list.to_json}"
-        puts "response code: #{response_code}"
-        puts "response body: #{response_body}"
-      end
-
-      if response_code.to_i >= 300
-        raise DebugModeError.new("Could not write to Sensors Analytics, server responded with #{response_code} returning: '#{response_body}'")
-      end
-    end
- 
-  end
-
 end

@@ -1,0 +1,24 @@
+PATH
+  remote: .
+  specs:
+    sensors_analytics_sdk (1.5.3)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    metaclass (0.0.4)
+    minitest (5.10.1)
+    mocha (1.2.1)
+      metaclass (~> 0.0.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 1.10)
+  minitest (~> 5.0)
+  mocha
+  sensors_analytics_sdk!
+
+BUNDLED WITH
+   1.13.7
