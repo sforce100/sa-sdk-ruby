@@ -1,7 +1,9 @@
-require '../../lib/sensors_analytics_sdk.rb'
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+require 'sensors_analytics_sdk'
 
 DISTINCT_ID = 'abcdefg'
 
+# TODO use your sa host
 SA_URL = 'http://sa_host.com:8006/sa?token=xxx'
 
 def debug_mode_demo
