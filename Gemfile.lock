@@ -6,10 +6,13 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
+    connection_pool (2.2.1)
     metaclass (0.0.4)
     minitest (5.10.1)
     mocha (1.2.1)
       metaclass (~> 0.0.1)
+    net-http-persistent (3.0.0)
+      connection_pool (~> 2.2)
     rake (10.4.2)
 
 PLATFORMS
@@ -19,6 +22,7 @@ DEPENDENCIES
   bundler (~> 1.10)
   minitest (~> 5.0)
   mocha
+  net-http-persistent
   rake (~> 10.0)
   sensors_analytics_sdk!
 

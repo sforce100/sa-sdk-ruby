@@ -1,9 +1,16 @@
 require 'net/http'
 
+begin
+  require 'net/http/persistent'
+rescue LoadError
+  # do nothing
+end
+
 module SensorsAnalytics
   class Http
-    def initialize(server_url)
-      @server_url = server_url
+    def initialize(server_url, options = {})
+      @uri = _get_uri(server_url)
+      @keep_alive = options[:keep_alive] && defined?(Net::HTTP::Persistent)
     end
 
     def request(form_data, headers = {})
@@ -12,20 +19,31 @@ module SensorsAnalytics
         init_header[key] = value
       end
 
-      uri = _get_uri(@server_url)
-      request = Net::HTTP::Post.new(uri.request_uri, initheader)
+      request = Net::HTTP::Post.new(@uri.request_uri, init_header)
       request.set_form_data(form_data)
 
-      client = Net::HTTP.new(uri.host, uri.port)
-      client.open_timeout = 10
-      client.continue_timeout = 10
-      client.read_timeout = 10
-
-      response = client.request(request)
+      response = do_request(request)
       [response.code, response.body]
     end
 
     private
+
+    def do_request(request)
+      if @keep_alive
+        @client ||= begin
+          client = Net::HTTP::Persistent.new name: "sa_sdk"
+          client.open_timeout = 10
+          client
+        end
+        @client.request(@uri, request)
+      else
+        client = Net::HTTP.new(@uri.host, @uri.port)
+        client.open_timeout = 10
+        client.continue_timeout = 10
+        client.read_timeout = 10
+        client.request(request)
+      end
+    end
 
     def _get_uri(url)
       begin
