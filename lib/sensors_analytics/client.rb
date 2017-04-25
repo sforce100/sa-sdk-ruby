@@ -161,18 +161,26 @@ module SensorsAnalytics
     end
 
     def _get_lib_properties
-      lib_properties = {
-        '$lib' => 'Ruby',
-        '$lib_version' => VERSION,
-        '$lib_method' => 'code',
-      }
+      @lib_properties ||= begin
+        lib_properties = {
+          '$lib' => 'Ruby',
+          '$lib_version' => VERSION,
+          '$lib_method' => 'code',
+        }
 
-      @super_properties.each do |key, value|
-        if key == :$app_version || key == "$app_version"
-          lib_properties[:$app_version] = value
+        @super_properties.each do |key, value|
+          if key == :$app_version || key == "$app_version"
+            lib_properties[:$app_version] = value
+          end
         end
-      end
 
+        #lib_properties[:$lib_detail] = _get_lib_detail
+
+        lib_properties
+      end
+    end
+
+    def _get_lib_detail
       begin
         raise Exception
       rescue Exception => e
@@ -180,10 +188,8 @@ module SensorsAnalytics
         file = trace[0]
         line = trace[1]
         function = trace[2].split('`')[1][0..-2]
-        lib_properties[:$lib_detail] = "###{function}###{file}###{line}"
+        return "###{function}###{file}###{line}"
       end
-
-      return lib_properties
     end
 
     def _assert_key(type, key)

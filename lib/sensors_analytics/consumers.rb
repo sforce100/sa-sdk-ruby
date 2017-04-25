@@ -1,13 +1,11 @@
 require 'base64'
 require 'json'
-require 'net/http'
 require 'zlib'
 
 module SensorsAnalytics
   class SensorsAnalyticsConsumer
-
     def initialize(server_url)
-      @server_url = server_url
+      @http_client = Http.new(server_url)
     end
 
     def request!(event_list, headers = {})
@@ -21,38 +19,10 @@ module SensorsAnalytics
       gzip_io.write(event_list.to_json)
       gzip_io.close
       data = Base64.encode64(wio.string).gsub("\n", '')
-
       form_data = {"data_list" => data, "gzip" => 1}
 
-      init_header = {"User-Agent" => "SensorsAnalytics Ruby SDK"}
-      headers.each do |key, value|
-        init_header[key] = value
-      end
-
-      uri = _get_uri(@server_url)
-      request = Net::HTTP::Post.new(uri.request_uri, initheader = init_header)
-      request.set_form_data(form_data)
-
-      client = Net::HTTP.new(uri.host, uri.port)
-      client.open_timeout = 10
-      client.continue_timeout = 10
-      client.read_timeout = 10
-
-      response = client.request(request)
-      return [response.code, response.body]
+      @http_client.request(form_data, headers)
     end
-
-    def _get_uri(url)
-      begin
-        URI.parse(url)
-      rescue URI::InvalidURIError
-        host = url.match(".+\:\/\/([^\/]+)")[1]
-        uri = URI.parse(url.sub(host, 'dummy-host'))
-        uri.instance_variable_set('@host', host)
-        uri
-      end
-    end
-
   end
 
   # 实现逐条、同步发送的 Consumer，初始化参数为 Sensors Analytics 收集数据的 URI
