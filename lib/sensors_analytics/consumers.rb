@@ -19,7 +19,7 @@ module SensorsAnalytics
       wio = StringIO.new("w")
       gzip_io = Zlib::GzipWriter.new(wio)
       gzip_io.write(event_list.to_json)
-      gzip_io.close()
+      gzip_io.close
       data = Base64.encode64(wio.string).gsub("\n", '')
 
       form_data = {"data_list" => data, "gzip" => 1}
@@ -44,12 +44,12 @@ module SensorsAnalytics
 
     def _get_uri(url)
       begin
-          URI.parse(url)
+        URI.parse(url)
       rescue URI::InvalidURIError
-          host = url.match(".+\:\/\/([^\/]+)")[1]
-          uri = URI.parse(url.sub(host, 'dummy-host'))
-          uri.instance_variable_set('@host', host)
-          uri
+        host = url.match(".+\:\/\/([^\/]+)")[1]
+        uri = URI.parse(url.sub(host, 'dummy-host'))
+        uri.instance_variable_set('@host', host)
+        uri
       end
     end
 
@@ -94,7 +94,7 @@ module SensorsAnalytics
       flush if @event_buffer.length >= @flush_bulk
     end
 
-    def flush()
+    def flush
       @event_buffer.each_slice(@flush_bulk) do |event_list|
         begin
           response_code, response_body = request!(event_list)

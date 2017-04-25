@@ -24,7 +24,7 @@ module SensorsAnalytics
     def initialize(consumer)
       @consumer = consumer
       # 初始化事件公共属性
-      clear_super_properties()
+      clear_super_properties
     end
 
     # 设置每个事件都带有的一些公共属性
@@ -37,7 +37,7 @@ module SensorsAnalytics
     end
 
     # 删除所有已设置的事件公共属性
-    def clear_super_properties()
+    def clear_super_properties
       @super_properties = {
         '$lib' => 'Ruby',
         '$lib_version' => VERSION,
@@ -128,15 +128,15 @@ module SensorsAnalytics
         end
       end
 
-      lib_properties = _get_lib_properties()
+      lib_properties = _get_lib_properties
 
       # Track / TrackSignup / ProfileSet / ProfileSetOne / ProfileIncrement / ProfileAppend / ProfileUnset
       event = {
-          :type => event_type,
-          :time => event_time,
-          :distinct_id => distinct_id,
-          :properties => event_properties,
-          :lib => lib_properties,
+        type: event_type,
+        time: event_time,
+        distinct_id: distinct_id,
+        properties: event_properties,
+        lib: lib_properties,
       }
 
       if event_type == :track
@@ -157,10 +157,10 @@ module SensorsAnalytics
           return (value.to_f * 1000).to_i
         end
       end
-      return (Time.now().to_f * 1000).to_i
+      return (Time.now.to_f * 1000).to_i
     end
 
-    def _get_lib_properties()
+    def _get_lib_properties
       lib_properties = {
         '$lib' => 'Ruby',
         '$lib_version' => VERSION,
