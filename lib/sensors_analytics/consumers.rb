@@ -5,7 +5,7 @@ require 'zlib'
 module SensorsAnalytics
   class SensorsAnalyticsConsumer
     def initialize(server_url)
-      @http_client = Http.new(server_url)
+      @http_client = Http.new(server_url, keep_alive: true)
     end
 
     def request!(event_list, headers = {})
@@ -89,7 +89,7 @@ module SensorsAnalytics
   class DebugConsumer < SensorsAnalyticsConsumer
 
     def initialize(server_url, write_data)
-      uri = _get_uri(server_url)
+      uri = URI.parse(server_url)
       # 将 URL Path 替换成 Debug 模式的 '/debug'
       uri.path = '/debug'
 
