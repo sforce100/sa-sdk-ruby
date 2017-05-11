@@ -1,7 +1,9 @@
-require './lib/sensors_analytics_sdk.rb'
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+require 'sensors_analytics_sdk'
 
 DISTINCT_ID = 'abcdefg'
 
+# TODO use your sa host
 SA_URL = 'http://sa_host.com:8006/sa?token=xxx'
 
 def debug_mode_demo
@@ -13,23 +15,23 @@ def debug_mode_demo
 
   consumer = SensorsAnalytics::DebugConsumer.new(SA_URL, false)
   sa = SensorsAnalytics::SensorsAnalytics.new(consumer)
-  
+
   begin
     properties = {
         "sex" => "male",
         "age" => 123,
-        "$time" => Time.now(),
-        "event_time" => Time.now()
+        "$time" => Time.now,
+        "event_time" => Time.now
     }
     # expects 'valid message...'
     sa.track(DISTINCT_ID, "RubyDemoStart", properties)
   rescue => e
     puts "Unexpected exception: '#{e.message}'"
   end
- 
+
   consumer = SensorsAnalytics::DebugConsumer.new(SA_URL, true)
   sa = SensorsAnalytics::SensorsAnalytics.new(consumer)
-  
+
   begin
     properties = {
         "sex" => "male",
@@ -109,8 +111,8 @@ def batch_consumer_demo
     for i in 0..15
       sa.track(DISTINCT_ID, "RubyDemoStart", {"sex" => "male", "age" => 123, "sort" => i})
     end
-    # consumer 的 flush_bulk 设为10，因此 consumer 会批量发送10条 events，剩余5条，手动调用 consumer.flush() 发送
-    consumer.flush()
+    # consumer 的 flush_bulk 设为10，因此 consumer 会批量发送10条 events，剩余5条，手动调用 consumer.flush 发送
+    consumer.flush
   rescue => e
     puts "Unexpected exception: '#{e.message}'"
   end
@@ -118,10 +120,10 @@ end
 
 if __FILE__ == $0
   # Debug 模式
-  debug_mode_demo()  
+  debug_mode_demo
   # 普通模式
-  default_consumer_demo()
+  default_consumer_demo
   # 批量同步发送模式
-  batch_consumer_demo()
+  batch_consumer_demo
 end
 
