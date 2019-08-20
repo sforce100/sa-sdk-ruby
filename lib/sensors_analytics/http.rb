@@ -33,11 +33,13 @@ module SensorsAnalytics
         @client ||= begin
           client = Net::HTTP::Persistent.new name: "sa_sdk"
           client.open_timeout = 10
+          client.use_ssl = true if @uri.port == 443
           client
         end
         @client.request(@uri, request)
       else
         client = Net::HTTP.new(@uri.host, @uri.port)
+        client.use_ssl = true if @uri.port == 443
         client.open_timeout = 10
         client.continue_timeout = 10
         client.read_timeout = 10
